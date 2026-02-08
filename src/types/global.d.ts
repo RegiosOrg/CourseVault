@@ -63,6 +63,14 @@ interface ElectronAPI {
   // Platform info
   platform: NodeJS.Platform
   isDev: boolean
+
+  // Auto-updater
+  checkForUpdates: () => Promise<{ checking: boolean; updateInfo: any; error?: string }>
+  installUpdate: () => Promise<void>
+  onUpdateAvailable: (callback: (info: { version: string; releaseDate: string; releaseNotes?: string }) => void) => () => void
+  onUpdateDownloaded: (callback: (info: { version: string; releaseDate: string }) => void) => () => void
+  onUpdateProgress: (callback: (progress: { percent: number; bytesPerSecond: number; transferred: number; total: number }) => void) => () => void
+  onUpdateError: (callback: (error: string) => void) => () => void
 }
 
 declare global {

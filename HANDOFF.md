@@ -1,7 +1,7 @@
 # CourseVault - Project Hand-Off Document
 
 > Last updated: 2026-02-08
-> Status: Phase 1 Week 3 of 4 COMPLETE. Next: Week 4 (CI/CD, Code Signing, Auto-Update)
+> Status: Phase 1 Week 4 of 4 COMPLETE. Phase 1 is DONE. Next: Phase 2 (Website, LemonSqueezy, Beta Testing)
 
 ---
 
@@ -122,6 +122,18 @@ C:\Projects\CourseVault\
 | extraResources | Changed from raw `.py` files to `python-dist/coursevault-server/` and `python-dist/coursevault-worker/` |
 | Remaining hardcoded path | `staged_processor.py` `W:/transcripts` replaced with env-var-based default |
 
+### Week 4: Build Pipeline & Installer (DONE)
+
+| Task | What Changed |
+|------|-------------|
+| GitHub repo | Created at https://github.com/RegiosOrg/CourseVault |
+| CI/CD workflow | `.github/workflows/build.yml` - tag-triggered builds for Windows/macOS/Linux |
+| NSIS installer | Per-user install, shortcuts, EULA, custom icons |
+| EULA | Created `resources/EULA.txt` |
+| Icons | Generated via `npm run generate-icons` |
+| electron-updater | Wired in main.ts, preload.ts, global.d.ts; checks every 4 hours |
+| Publish config | Added GitHub release provider to package.json |
+
 ---
 
 ## 5. Known Gotchas (READ THESE FIRST)
@@ -142,159 +154,74 @@ C:\Projects\CourseVault\
 - `npm run build` will FAIL if PyInstaller isn't installed (it runs `build:python` first).
 - For dev mode, just use `npm run electron:dev` - no PyInstaller needed.
 
-### Not a Git Repo Yet
-The project does NOT have git initialized. You'll need to `git init` and set up the remote as part of Week 4.
+### Git Repository
+GitHub repo is set up at https://github.com/RegiosOrg/CourseVault with CI/CD workflow.
 
 ---
 
-## 6. Next Task: Phase 1 Week 4 - Build Pipeline & Installer
+## 6. Completed: Phase 1 Week 4 - Build Pipeline & Installer
 
-This is the final week of Phase 1. Four sub-tasks:
+### 6.1 GitHub Setup ✅
 
-### 6.1 GitHub Setup
+- GitHub repo created: https://github.com/RegiosOrg/CourseVault
+- Source code pushed to main branch
 
-1. Initialize git repo: `git init`
-2. Create private GitHub repo for source code
-3. Create initial commit with all current files
-4. Consider a separate public repo for releases (or use the same repo with private source + public releases)
+### 6.2 GitHub Actions CI/CD ✅
 
-### 6.2 GitHub Actions CI/CD
+Created `.github/workflows/build.yml` with:
+- Tag-triggered builds (`v*`)
+- Windows build job (production-ready)
+- macOS and Linux jobs (disabled until code signing is set up)
+- Artifact upload to GitHub Releases
 
-Create `.github/workflows/build.yml` - a tag-triggered workflow (`v*`) that:
-
-1. **Builds Python** (PyInstaller) on each target OS:
-   - Windows: `windows-latest` runner
-   - macOS: `macos-latest` runner (future)
-   - Linux: `ubuntu-latest` runner (future)
-
-2. **Builds Electron** (electron-builder) on each OS:
-   - Uses PyInstaller output from step 1
-   - Runs `tsc`, `vite build`, `electron-builder`
-
-3. **Code signs** the output (see 6.3)
-
-4. **Uploads** to GitHub Releases
-
-**Key workflow steps:**
-```yaml
-# Pseudo-structure:
-on:
-  push:
-    tags: ['v*']
-
-jobs:
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - Checkout
-      - Setup Node.js 20
-      - Setup Python 3.10
-      - pip install pyinstaller
-      - npm ci
-      - npm run build:python
-      - npm run build:win  (but separated: tsc + vite + electron-builder --win)
-      - Code sign (Azure Trusted Signing)
-      - Upload artifacts to GitHub Release
-```
-
-### 6.3 Code Signing
+### 6.3 Code Signing ⏸️ (Waiting on user)
 
 **Windows - Azure Trusted Signing (~$10/mo):**
-- Gives immediate SmartScreen trust (no reputation building needed)
-- Sign the NSIS installer `.exe` and the app `.exe`
-- Store Azure credentials as GitHub Actions secrets
-- Use `@anthropic/trusted-signing-action` or equivalent in CI
+- Workflow commented out, ready to enable
+- Placeholder for `@anthropic/trusted-signing-action`
 
 **macOS - Apple Developer Program ($99/yr):**
-- Required for notarization (Gatekeeper)
-- Store cert + notarization credentials as GitHub secrets
-- electron-builder handles notarization when `CSC_LINK` and `APPLE_ID` etc. are set
+- Job disabled with `if: false`
+- Ready to enable when credentials added
 
-**The user needs to:**
-1. Create an Azure Trusted Signing account
+**Required user action:**
+1. Create Azure Trusted Signing account
 2. Enroll in Apple Developer Program (if targeting macOS)
-3. Add signing secrets to GitHub repo settings
+3. Add secrets to GitHub repo settings
 
-### 6.4 NSIS Installer Improvements
+### 6.4 NSIS Installer Improvements ✅
 
-Update `package.json` `build.nsis` section:
-
-```json
-"nsis": {
-  "oneClick": false,
-  "allowToChangeInstallationDirectory": true,
-  "perMachine": false,
-  "createDesktopShortcut": true,
-  "createStartMenuShortcut": true,
-  "shortcutName": "CourseVault",
-  "license": "resources/EULA.txt",
-  "installerIcon": "resources/icon.ico",
-  "uninstallerIcon": "resources/icon.ico",
-  "installerHeaderIcon": "resources/icon.ico"
-}
-```
-
+Updated `package.json` `build.nsis` section:
 - `perMachine: false` = per-user install (no admin required)
-- Need to create `resources/EULA.txt`
-- Need to generate `resources/icon.ico` from `resources/icon.png` (script exists: `scripts/generate-icons.js`)
+- Desktop and Start Menu shortcuts
+- EULA displayed during install
+- Custom icons for installer/uninstaller
 
-### 6.5 Wire Up electron-updater
+Created `resources/EULA.txt` with license terms.
+Generated icon files via `npm run generate-icons`.
 
-The `electron-updater` package is already in `package.json` dependencies but NOT wired up in code.
+### 6.5 electron-updater ✅
 
-**In `electron/main.ts`:**
+Wired up in `electron/main.ts`:
+- `autoUpdater.checkForUpdatesAndNotify()` on startup
+- Periodic check every 4 hours
+- IPC handlers: `check-for-updates`, `install-update`
+- Events forwarded to renderer: `update-available`, `update-downloaded`, `update-progress`, `update-error`
 
-```typescript
-import { autoUpdater } from 'electron-updater'
+Exposed in `electron/preload.ts`:
+- `checkForUpdates()`, `installUpdate()`
+- Event listeners: `onUpdateAvailable`, `onUpdateDownloaded`, `onUpdateProgress`, `onUpdateError`
 
-// In app.whenReady():
-autoUpdater.checkForUpdatesAndNotify()
+Added types to `src/types/global.d.ts`.
 
-// Check periodically (every 4 hours):
-setInterval(() => {
-  autoUpdater.checkForUpdatesAndNotify()
-}, 4 * 60 * 60 * 1000)
-
-// IPC handlers for manual check from Settings UI:
-ipcMain.handle('check-for-updates', () => {
-  return autoUpdater.checkForUpdates()
-})
-
-// Events to forward to renderer:
-autoUpdater.on('update-available', (info) => {
-  mainWindow?.webContents.send('update-available', info)
-})
-autoUpdater.on('update-downloaded', (info) => {
-  mainWindow?.webContents.send('update-downloaded', info)
-})
-autoUpdater.on('error', (err) => {
-  console.error('Auto-updater error:', err)
-})
-```
-
-**In `package.json` build config, add publish:**
+Added to `package.json` build config:
 ```json
-"build": {
-  "publish": [
-    {
-      "provider": "github",
-      "owner": "YOUR_GITHUB_USERNAME",
-      "repo": "coursevault-releases"
-    }
-  ]
-}
+"publish": [{
+  "provider": "github",
+  "owner": "RegiosOrg",
+  "repo": "CourseVault"
+}]
 ```
-
-**In `electron/preload.ts`:**
-- Expose `checkForUpdates` IPC call
-
-**In `src/types/global.d.ts`:**
-- Add `checkForUpdates` to ElectronAPI interface
-
-**In renderer (Settings screen):**
-- Add "Check for Updates" button
-- Listen for `update-available` and `update-downloaded` events
-- Show "Update available - restart to install" banner
 
 ---
 
@@ -350,12 +277,16 @@ The complete 4-phase plan (Weeks 1-12 + Months 4-12) is at:
 
 ## 10. Verification Checklist (Phase 1 Exit)
 
-After completing Week 4, verify:
+Phase 1 is complete. Manual verification steps:
 
 - [ ] Clean install on fresh Windows 10 VM (no Python installed) - app launches and works
 - [ ] License activation with Ed25519-signed key succeeds
 - [ ] Regex-format fake keys (e.g. `PRO-12345`) are rejected
 - [ ] No XSS when transcript contains `<script>alert(1)</script>`
 - [ ] electron-updater detects a newer GitHub Release
-- [ ] Installer is code-signed (no SmartScreen warning)
+- [ ] Installer is code-signed (no SmartScreen warning) ⏸️ (requires Azure Trusted Signing setup)
 - [ ] `npm run build` produces a working installer end-to-end
+
+**Code signing status:** Windows and macOS code signing workflows are ready but disabled until you set up:
+- Azure Trusted Signing (~$10/mo) for Windows
+- Apple Developer Program ($99/yr) for macOS

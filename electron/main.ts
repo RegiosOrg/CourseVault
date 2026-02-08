@@ -6,6 +6,7 @@ import fs from 'fs'
 import os from 'os'
 import Store from 'electron-store'
 import { z } from 'zod'
+import { autoUpdater } from 'electron-updater'
 
 // Schema for validating settings updates via IPC
 const settingsSchema = z.discriminatedUnion('key', [
@@ -1082,6 +1083,85 @@ function setupIPC(): void {
   })
 }
 
+// Auto-updater event handlers
+function setupAutoUpdater(): void {
+  // Only check for updates in production builds
+  if (isDev) {
+    console.log('Auto-updater disabled in development')
+    return
+  }
+
+  // Configure auto-updater
+  autoUpdater.autoDownload = true
+  autoUpdater.autoInstallOnAppQuit = true
+
+  // Check for updates on startup
+  autoUpdater.checkForUpdatesAndNotify().catch(err => {
+    console.error('Auto-updater initial check failed:', err)
+  })
+
+  // Check periodically (every 4 hours)
+  setInterval(() => {
+    autoUpdater.checkForUpdatesAndNotify().catch(err => {
+      console.error('Auto-updater periodic check failed:', err)
+    })
+  }, 4 * 60 * 60 * 1000)
+
+  // Forward events to renderer
+  autoUpdater.on('update-available', (info) => {
+    console.log('Update available:', info.version)
+    mainWindow?.webContents.send('update-available', {
+      version: info.version,
+      releaseDate: info.releaseDate,
+      releaseNotes: info.releaseNotes
+    })
+  })
+
+  autoUpdater.on('update-downloaded', (info) => {
+    console.log('Update downloaded:', info.version)
+    mainWindow?.webContents.send('update-downloaded', {
+      version: info.version,
+      releaseDate: info.releaseDate
+    })
+  })
+
+  autoUpdater.on('download-progress', (progress) => {
+    mainWindow?.webContents.send('update-progress', {
+      percent: progress.percent,
+      bytesPerSecond: progress.bytesPerSecond,
+      transferred: progress.transferred,
+      total: progress.total
+    })
+  })
+
+  autoUpdater.on('error', (err) => {
+    console.error('Auto-updater error:', err)
+    mainWindow?.webContents.send('update-error', err.message)
+  })
+
+  // IPC handler for manual update check
+  ipcMain.handle('check-for-updates', async () => {
+    try {
+      const result = await autoUpdater.checkForUpdates()
+      return {
+        checking: true,
+        updateInfo: result?.updateInfo || null
+      }
+    } catch (err) {
+      console.error('Manual update check failed:', err)
+      return {
+        checking: false,
+        error: err instanceof Error ? err.message : String(err)
+      }
+    }
+  })
+
+  // IPC handler to install update and restart
+  ipcMain.handle('install-update', () => {
+    autoUpdater.quitAndInstall()
+  })
+}
+
 // App lifecycle
 app.whenReady().then(async () => {
   setupIPC()
@@ -1089,6 +1169,9 @@ app.whenReady().then(async () => {
 
   // Create window FIRST so user sees something immediately
   createWindow()
+
+  // Setup auto-updater
+  setupAutoUpdater()
 
   // Auto-start Ollama if configured
   autoStartOllama()

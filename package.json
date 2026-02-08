@@ -105,7 +105,22 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
-    }
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "CourseVault",
+      "license": "resources/EULA.txt",
+      "installerIcon": "resources/icon.ico",
+      "uninstallerIcon": "resources/icon.ico",
+      "installerHeaderIcon": "resources/icon.ico"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "RegiosOrg",
+        "repo": "CourseVault"
+      }
+    ]
   }
 }

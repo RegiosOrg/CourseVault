@@ -1,0 +1,57 @@
+END USER LICENSE AGREEMENT
+
+CourseVault Desktop Application
+
+IMPORTANT: PLEASE READ THIS END USER LICENSE AGREEMENT ("EULA") CAREFULLY BEFORE INSTALLING OR USING THE COURSEVAULT APPLICATION ("SOFTWARE"). BY INSTALLING, COPYING, OR OTHERWISE USING THE SOFTWARE, YOU AGREE TO BE BOUND BY THE TERMS OF THIS EULA. IF YOU DO NOT AGREE TO THE TERMS OF THIS EULA, DO NOT INSTALL OR USE THE SOFTWARE.
+
+1. LICENSE GRANT
+
+CourseVault ("Licensor") grants you ("Licensee") a non-exclusive, non-transferable license to use the Software subject to the terms and conditions of this EULA.
+
+2. LICENSE TIERS
+
+2.1 Free Tier: Limited to 100 courses and 200 hours of video content.
+2.2 Pro License: One-time purchase. Removes course and hour limitations for personal use.
+2.3 Pro+ License: Subscription-based. Includes cloud features and priority support.
+
+3. RESTRICTIONS
+
+You may NOT:
+- Reverse engineer, decompile, or disassemble the Software
+- Rent, lease, lend, sell, redistribute, or sublicense the Software
+- Use the Software for any unlawful purpose
+- Share license keys with other users
+- Circumvent license validation mechanisms
+
+4. PRIVACY & DATA
+
+CourseVault processes video content locally on your device. Transcription data is stored locally unless you explicitly enable cloud sync features (Pro+ tier only).
+
+5. THIRD-PARTY COMPONENTS
+
+The Software requires separate installation of:
+- FFmpeg (for video processing)
+- whisper.cpp (for transcription)
+- Ollama or LM Studio (for AI features)
+
+These components are subject to their own licenses.
+
+6. DISCLAIMER OF WARRANTY
+
+THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
+7. LIMITATION OF LIABILITY
+
+IN NO EVENT SHALL LICENSOR BE LIABLE FOR ANY SPECIAL, INCIDENTAL, INDIRECT, OR CONSEQUENTIAL DAMAGES WHATSOEVER.
+
+8. TERMINATION
+
+This EULA is effective until terminated. Your rights under this EULA will terminate automatically without notice if you fail to comply with any term.
+
+9. GOVERNING LAW
+
+This EULA shall be governed by the laws of the jurisdiction in which the Licensor operates.
+
+By clicking "I Agree" or installing the Software, you acknowledge that you have read, understood, and agree to be bound by the terms of this EULA.
+
+Copyright (c) 2024-2026 CourseVault. All rights reserved.

@@ -76,7 +76,31 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Platform info
   platform: process.platform,
-  isDev: process.env.NODE_ENV === 'development'
+  isDev: process.env.NODE_ENV === 'development',
+
+  // Auto-updater
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
+  onUpdateAvailable: (callback: (info: { version: string; releaseDate: string; releaseNotes?: string }) => void) => {
+    const handler = (_: any, info: { version: string; releaseDate: string; releaseNotes?: string }) => callback(info)
+    ipcRenderer.on('update-available', handler)
+    return () => ipcRenderer.removeListener('update-available', handler)
+  },
+  onUpdateDownloaded: (callback: (info: { version: string; releaseDate: string }) => void) => {
+    const handler = (_: any, info: { version: string; releaseDate: string }) => callback(info)
+    ipcRenderer.on('update-downloaded', handler)
+    return () => ipcRenderer.removeListener('update-downloaded', handler)
+  },
+  onUpdateProgress: (callback: (progress: { percent: number; bytesPerSecond: number; transferred: number; total: number }) => void) => {
+    const handler = (_: any, progress: { percent: number; bytesPerSecond: number; transferred: number; total: number }) => callback(progress)
+    ipcRenderer.on('update-progress', handler)
+    return () => ipcRenderer.removeListener('update-progress', handler)
+  },
+  onUpdateError: (callback: (error: string) => void) => {
+    const handler = (_: any, error: string) => callback(error)
+    ipcRenderer.on('update-error', handler)
+    return () => ipcRenderer.removeListener('update-error', handler)
+  }
 })
 
 // Type definitions for the exposed API
@@ -112,6 +136,13 @@ declare global {
       onTranscriberStatus: (callback: (status: { running: boolean; exitCode?: number }) => void) => () => void
       platform: NodeJS.Platform
       isDev: boolean
+      // Auto-updater
+      checkForUpdates: () => Promise<{ checking: boolean; updateInfo: any; error?: string }>
+      installUpdate: () => Promise<void>
+      onUpdateAvailable: (callback: (info: { version: string; releaseDate: string; releaseNotes?: string }) => void) => () => void
+      onUpdateDownloaded: (callback: (info: { version: string; releaseDate: string }) => void) => () => void
+      onUpdateProgress: (callback: (progress: { percent: number; bytesPerSecond: number; transferred: number; total: number }) => void) => () => void
+      onUpdateError: (callback: (error: string) => void) => () => void
     }
   }
 }
