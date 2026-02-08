@@ -1,0 +1,111 @@
+{
+  "name": "coursevault",
+  "version": "1.0.0",
+  "description": "Your course library, searchable at last",
+  "main": "dist-electron/main.js",
+  "author": "CourseVault",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run build:python && tsc -p tsconfig.electron.json && vite build && electron-builder",
+    "build:win": "npm run build:python && tsc -p tsconfig.electron.json && vite build && electron-builder --win",
+    "build:mac": "npm run build:python && tsc -p tsconfig.electron.json && vite build && electron-builder --mac",
+    "build:linux": "npm run build:python && tsc -p tsconfig.electron.json && vite build && electron-builder --linux",
+    "build:python": "node tools/build-python.js",
+    "build:python:server": "node tools/build-python.js server",
+    "build:python:worker": "node tools/build-python.js worker",
+    "build:python:clean": "node tools/build-python.js clean",
+    "preview": "vite preview",
+    "electron:dev": "tsc -p tsconfig.electron.json && concurrently --kill-others -n vite,electron -c blue,green \"vite --host\" \"wait-on -t 30000 http://localhost:5173 && electron .\"",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.tsx",
+    "generate-icons": "node scripts/generate-icons.js"
+  },
+  "dependencies": {
+    "dompurify": "^3.3.1",
+    "electron-store": "^8.1.0",
+    "electron-updater": "^6.1.7",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/dompurify": "^3.0.5",
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.16",
+    "concurrently": "^8.2.2",
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1",
+    "eslint": "^8.56.0",
+    "png-to-ico": "^3.0.1",
+    "postcss": "^8.4.32",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "sharp": "^0.34.5",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10",
+    "vite-plugin-electron": "^0.15.4",
+    "vite-plugin-electron-renderer": "^0.14.5",
+    "wait-on": "^7.2.0",
+    "zustand": "^4.4.7"
+  },
+  "build": {
+    "appId": "com.coursevault.app",
+    "productName": "Course Vault",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "python/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "python-dist/coursevault-server",
+        "to": "python-dist/coursevault-server",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "python-dist/coursevault-worker",
+        "to": "python-dist/coursevault-worker",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "resources/icon.png",
+        "to": "icon.png"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "resources/icon.png"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "icon": "resources/icon.png",
+      "category": "public.app-category.productivity"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "icon": "resources/icon.png",
+      "category": "Office"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

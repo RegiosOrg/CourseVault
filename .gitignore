@@ -1,0 +1,77 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+dist-electron/
+release/
+release2/
+release3/
+release4/
+python-dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# License signing keys (NEVER commit)
+.keys/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+
+# Large binaries (never commit)
+*.exe
+*.dll
+*.so
+*.dylib
+*.bin
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.rar
+*.whl
+*.model
+*.gguf
+
+# Media files
+*.mp4
+*.mkv
+*.avi
+*.mov
+*.webm
+*.mp3
+*.wav
+
+# Claude Code project config
+.claude/
+
+# Design mockups (reference only, not source)
+stitch_designs/
+
+# Windows artifacts
+nul
+
+# Package lock (use npm ci in CI)
+# package-lock.json

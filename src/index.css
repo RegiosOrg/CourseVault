@@ -1,0 +1,271 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+@layer base {
+  :root {
+    --bg-primary: #0d1117;
+    --bg-secondary: #161b22;
+    --bg-tertiary: #21262d;
+    --border: #30363d;
+    --text-primary: #e6edf3;
+    --text-secondary: #f0f6fc;
+    --text-muted: #8b949e;
+    --text-body: #c9d1d9;
+    --accent: #3B82F6;
+    --accent-hover: #2563eb;
+    --accent-bg: rgba(59, 130, 246, 0.1);
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --error: #ef4444;
+  }
+
+  .light {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-tertiary: #f1f5f9;
+    --border: #e2e8f0;
+    --text-primary: #1e293b;
+    --text-secondary: #0f172a;
+    --text-muted: #64748b;
+    --text-body: #334155;
+    --accent: #3B82F6;
+    --accent-hover: #2563eb;
+    --accent-bg: rgba(59, 130, 246, 0.08);
+  }
+
+  html {
+    font-size: 15px;
+  }
+
+  body {
+    @apply bg-[var(--bg-primary)] text-[var(--text-primary)] antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow: hidden;
+    line-height: 1.6;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-[var(--bg-primary)];
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-[var(--border)] rounded;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-[var(--text-muted)];
+  }
+
+  /* Selection */
+  ::selection {
+    @apply bg-accent/30;
+  }
+}
+
+/* Prose/Content styles */
+@layer components {
+  .content-prose {
+    @apply text-[var(--text-body)] leading-relaxed;
+    max-width: 65ch;
+  }
+
+  .content-prose h1 {
+    @apply text-2xl font-bold text-[var(--text-secondary)] mb-6 mt-8 first:mt-0;
+    letter-spacing: -0.02em;
+  }
+
+  .content-prose h2 {
+    @apply text-xl font-semibold text-accent mb-4 mt-8 pb-2 border-b border-[var(--border)];
+    letter-spacing: -0.01em;
+  }
+
+  .content-prose h3 {
+    @apply text-lg font-medium text-[var(--text-primary)] mt-6 mb-3;
+  }
+
+  .content-prose p {
+    @apply mb-4 text-[var(--text-body)];
+  }
+
+  .content-prose strong {
+    @apply font-semibold text-[var(--text-primary)];
+  }
+
+  .content-prose em {
+    @apply italic text-[var(--text-muted)];
+  }
+
+  .content-prose ul,
+  .content-prose ol {
+    @apply mb-5 space-y-2;
+  }
+
+  .content-prose li {
+    @apply pl-2 text-[var(--text-body)];
+    position: relative;
+  }
+
+  .content-prose ul li {
+    @apply list-disc ml-5;
+  }
+
+  .content-prose ul li::marker {
+    @apply text-accent;
+  }
+
+  .content-prose ol li {
+    @apply list-decimal ml-5;
+  }
+
+  .content-prose ol li::marker {
+    @apply text-accent font-medium;
+  }
+
+  .content-prose code {
+    @apply px-1.5 py-0.5 bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded text-sm;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .content-prose pre {
+    @apply p-4 bg-[var(--bg-tertiary)] rounded-lg overflow-x-auto mb-4;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .content-prose blockquote {
+    @apply border-l-4 border-accent pl-4 py-1 my-4 bg-[var(--accent-bg)] rounded-r;
+  }
+
+  .content-prose blockquote p {
+    @apply mb-0 text-[var(--text-primary)];
+  }
+
+  .content-prose hr {
+    @apply my-8 border-[var(--border)];
+  }
+
+  .content-prose a {
+    @apply text-accent hover:underline;
+  }
+
+  /* Focus ring */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-[var(--bg-primary)];
+  }
+
+  /* Card styles */
+  .card {
+    @apply bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg;
+  }
+
+  .card-hover {
+    @apply card hover:border-accent/50 transition-colors;
+  }
+
+  /* Input styles */
+  .input-base {
+    @apply w-full px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border)] rounded-md text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors;
+  }
+
+  /* Button variants */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md font-medium transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--bg-primary)] disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-accent text-white hover:bg-[var(--accent-hover)] focus:ring-accent;
+  }
+
+  .btn-secondary {
+    @apply btn bg-[var(--bg-tertiary)] text-[var(--text-primary)] border border-[var(--border)] hover:bg-[var(--border)] focus:ring-[var(--border)];
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] focus:ring-[var(--border)];
+  }
+
+  .btn-danger {
+    @apply btn bg-[var(--error)] text-white hover:bg-red-600 focus:ring-[var(--error)];
+  }
+
+  /* Badge styles */
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+  }
+
+  .badge-success {
+    @apply badge bg-[var(--success)]/20 text-[var(--success)];
+  }
+
+  .badge-info {
+    @apply badge bg-accent/20 text-accent;
+  }
+
+  .badge-warning {
+    @apply badge bg-[var(--warning)]/20 text-[var(--warning)];
+  }
+
+  .badge-error {
+    @apply badge bg-[var(--error)]/20 text-[var(--error)];
+  }
+}
+
+/* Utility layer */
+@layer utilities {
+  /* Text utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Animation utilities */
+  .animate-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  /* Drag region for Electron */
+  .drag-region {
+    -webkit-app-region: drag;
+  }
+
+  .no-drag {
+    -webkit-app-region: no-drag;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounce-loading {
+  0%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-6px);
+  }
+}
+
+.loading-dot {
+  animation: bounce-loading 1.4s ease-in-out infinite;
+}
+
+.loading-dot:nth-child(1) { animation-delay: 0s; }
+.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot:nth-child(3) { animation-delay: 0.4s; }
