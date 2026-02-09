@@ -63,7 +63,6 @@ function buildTarget(python, specFile, name) {
     python, '-m', 'PyInstaller',
     '--distpath', OUTPUT_DIR,
     '--workpath', path.join(ROOT_DIR, 'build', 'pyinstaller', name),
-    '--specpath', PYTHON_DIR,
     '--clean',
     '--noconfirm',
     specFile

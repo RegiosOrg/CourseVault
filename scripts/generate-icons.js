@@ -59,24 +59,26 @@ async function generateIcons() {
   fs.copyFileSync(path.join(iconsDir, '512x512.png'), mainIconPath)
   console.log('  Created icon.png (512x512)')
 
-  // Generate ICO for Windows using sharp to create multi-resolution ICO
+  // Generate ICO for Windows using png-to-ico
   console.log('Generating Windows ICO...')
   try {
-    // Create a simple 256x256 PNG and use it for the ICO
-    // For proper multi-size ICO, electron-builder will handle it automatically
+    const pngToIco = require('png-to-ico').default || require('png-to-ico')
     const icoPath = path.join(resourcesDir, 'icon.ico')
-    // Use the 256x256 PNG as base - electron-builder converts automatically
-    await sharp(svgBuffer)
-      .resize(256, 256)
-      .png()
-      .toFile(icoPath.replace('.ico', '_256.png'))
-
-    // For proper ICO generation, we'll rely on electron-builder
-    // which can use PNG and convert to ICO during build
-    console.log('  Created 256x256 PNG for ICO conversion')
-    console.log('  Note: electron-builder will convert PNG to ICO during build')
+    
+    // Use multiple sizes for better quality ICO
+    const pngFiles = [
+      path.join(iconsDir, '16x16.png'),
+      path.join(iconsDir, '32x32.png'),
+      path.join(iconsDir, '48x48.png'),
+      path.join(iconsDir, '256x256.png')
+    ]
+    
+    const icoBuffer = await pngToIco(pngFiles)
+    fs.writeFileSync(icoPath, icoBuffer)
+    console.log('  Created icon.ico')
   } catch (err) {
-    console.log('  Error:', err.message)
+    console.log('  Error creating ICO:', err.message)
+    console.log('  You may need to install png-to-ico: npm install --save-dev png-to-ico')
   }
 
   console.log('\nIcon generation complete!')
