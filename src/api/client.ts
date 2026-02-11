@@ -184,6 +184,9 @@ class APIClient {
     in_progress: number
     pending: number
     total_videos_done: number
+    total_videos_processed: number
+    total_videos: number
+    processing_started_at: string | null
     completed_courses: string[]
     in_progress_courses: Array<{
       name: string

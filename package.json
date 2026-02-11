@@ -9,13 +9,14 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run build:python && tsc -p tsconfig.electron.json && vite build && electron-builder",
-    "build:win": "npm run build:python && tsc -p tsconfig.electron.json && vite build && electron-builder --win",
+    "build:win": "npm run download-deps && npm run build:python && tsc -p tsconfig.electron.json && vite build && electron-builder --win",
     "build:mac": "npm run build:python && tsc -p tsconfig.electron.json && vite build && electron-builder --mac",
     "build:linux": "npm run build:python && tsc -p tsconfig.electron.json && vite build && electron-builder --linux",
     "build:python": "node tools/build-python.js",
     "build:python:server": "node tools/build-python.js server",
     "build:python:worker": "node tools/build-python.js worker",
     "build:python:clean": "node tools/build-python.js clean",
+    "download-deps": "node scripts/download-deps.js",
     "preview": "vite preview",
     "electron:dev": "tsc -p tsconfig.electron.json && concurrently --kill-others -n vite,electron -c blue,green \"vite --host\" \"wait-on -t 30000 http://localhost:5173 && electron .\"",
     "typecheck": "tsc --noEmit",
@@ -81,6 +82,20 @@
       {
         "from": "resources/icon.png",
         "to": "icon.png"
+      },
+      {
+        "from": "resources/bin",
+        "to": "resources/bin",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "resources/models",
+        "to": "resources/models",
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {

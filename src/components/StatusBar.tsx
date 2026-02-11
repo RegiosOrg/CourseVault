@@ -17,6 +17,9 @@ interface TranscriptionStatus {
   in_progress: number
   pending: number
   total_videos_done: number
+  total_videos_processed: number
+  total_videos: number
+  processing_started_at: string | null
   completed_courses: string[]
   in_progress_courses: Array<{
     name: string
@@ -41,18 +44,35 @@ interface GenerationStatus {
   queue: string[]
 }
 
-// Estimate remaining time based on pending courses
-function estimateTimeRemaining(pending: number, inProgress: number, parallelWorkers: number = 2): string {
-  if (pending === 0 && inProgress === 0) return 'Complete'
+// Estimate remaining time based on actual processing rate
+function estimateTimeRemaining(
+  totalVideos: number,
+  processedVideos: number,
+  startedAt: string | null
+): { eta: string; rate: string } {
+  const remaining = totalVideos - processedVideos
+  if (remaining <= 0) return { eta: 'Complete', rate: '' }
+  if (!startedAt || processedVideos === 0) return { eta: 'Calculating...', rate: '' }
 
-  const avgMinutesPerCourse = 5
-  const effectiveWorkers = Math.max(1, parallelWorkers)
-  const totalPending = pending + inProgress
-  const totalMinutes = (totalPending * avgMinutesPerCourse) / effectiveWorkers
+  const startTime = new Date(startedAt).getTime()
+  if (isNaN(startTime)) return { eta: 'Calculating...', rate: '' }
+  const elapsedMs = Date.now() - startTime
+  const elapsedMinutes = elapsedMs / 60000
 
-  if (totalMinutes < 1) return '< 1 min'
-  if (totalMinutes < 60) return `~${Math.round(totalMinutes)} min`
-  return `~${(totalMinutes / 60).toFixed(1)} hrs`
+  if (elapsedMinutes < 1) return { eta: 'Calculating...', rate: '' }
+
+  const videosPerMinute = processedVideos / elapsedMinutes
+  const minutesPerVideo = elapsedMinutes / processedVideos
+  const remainingMinutes = remaining / videosPerMinute
+
+  const rateStr = minutesPerVideo >= 1
+    ? `${minutesPerVideo.toFixed(1)} min/video`
+    : `${(videosPerMinute).toFixed(1)} videos/min`
+
+  if (remainingMinutes < 1) return { eta: '< 1 min', rate: rateStr }
+  if (remainingMinutes < 60) return { eta: `~${Math.round(remainingMinutes)} min`, rate: rateStr }
+  if (remainingMinutes < 1440) return { eta: `~${(remainingMinutes / 60).toFixed(1)} hrs`, rate: rateStr }
+  return { eta: `~${(remainingMinutes / 1440).toFixed(1)} days`, rate: rateStr }
 }
 
 // Format elapsed time
@@ -66,7 +86,7 @@ function formatElapsed(startedAt?: string): string {
 }
 
 export default function StatusBar() {
-  const { generatingCourses, courseData } = useAppStore()
+  const { generatingCourses } = useAppStore()
   const [isExpanded, setIsExpanded] = useState(false)
   const [activeTab, setActiveTab] = useState<'console' | 'overview'>('overview')
   // Load persisted logs from localStorage
@@ -96,7 +116,6 @@ export default function StatusBar() {
     running: false,
     starting: false
   })
-  const parallelWorkers = useAppStore((s) => s.parallelWorkers)
   const logContainerRef = useRef<HTMLDivElement>(null)
   const prevStatusRef = useRef<string>('')
 
@@ -315,7 +334,12 @@ export default function StatusBar() {
           // Fetch transcription status
           try {
             const status = await api.getTranscriptionStatus()
-            setTranscriptionStatus(status)
+            setTranscriptionStatus({
+              ...status,
+              total_videos_processed: status.total_videos_processed ?? 0,
+              total_videos: status.total_videos ?? 0,
+              processing_started_at: status.processing_started_at ?? null,
+            })
 
             // Log changes in status
             const statusKey = JSON.stringify({
@@ -475,10 +499,15 @@ export default function StatusBar() {
   const queueLength = generationStatus?.queue?.length || 0
   const isProcessing = generatingCourses.size > 0 || !!currentTask || (transcriptionStatus?.in_progress || 0) > 0
 
-  // Calculate overall progress - use indexed count (from courseData) for consistency with sidebar
-  const totalCourses = transcriptionStatus?.total_courses || 0
-  const indexedCount = courseData?.courses?.length || 0
-  const indexedPercent = totalCourses > 0 ? Math.round((indexedCount / totalCourses) * 100) : 0
+  // Calculate overall progress using actual video-level data
+  const totalVideos = transcriptionStatus?.total_videos || 0
+  const processedVideos = transcriptionStatus?.total_videos_processed || 0
+  const videoPercent = totalVideos > 0 ? Math.round((processedVideos / totalVideos) * 100) : 0
+  const timeEstimate = estimateTimeRemaining(
+    totalVideos,
+    processedVideos,
+    transcriptionStatus?.processing_started_at ?? null
+  )
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 bg-[var(--bg-secondary)] border-t border-[var(--border)]">
@@ -502,21 +531,24 @@ export default function StatusBar() {
             </span>
           </div>
 
-          {/* Overall transcription progress - use indexed count for consistency */}
-          {transcriptionStatus && totalCourses > 0 && (
+          {/* Overall video-level transcription progress */}
+          {transcriptionStatus && totalVideos > 0 && (
             <>
               <div className="w-px h-4 bg-[var(--border)]" />
               <div className="flex items-center gap-2">
                 <span className="text-[var(--text-muted)]">
-                  Indexed: {indexedCount}/{totalCourses}
+                  Videos: {processedVideos.toLocaleString()}/{totalVideos.toLocaleString()}
                 </span>
                 <div className="w-20 h-1.5 bg-[var(--bg-tertiary)] rounded-full overflow-hidden">
                   <div
                     className="h-full bg-green-500 transition-all duration-300"
-                    style={{ width: `${indexedPercent}%` }}
+                    style={{ width: `${videoPercent}%` }}
                   />
                 </div>
-                <span className="text-[var(--text-muted)]">{indexedPercent}%</span>
+                <span className="text-[var(--text-muted)]">{videoPercent}%</span>
+                {timeEstimate.rate && (
+                  <span className="text-[var(--text-muted)] opacity-70">({timeEstimate.rate})</span>
+                )}
               </div>
             </>
           )}
@@ -713,14 +745,33 @@ export default function StatusBar() {
                     </div>
                   </div>
 
-                  {/* ETA */}
-                  {(transcriptionStatus.pending > 0 || transcriptionStatus.in_progress > 0) && (
-                    <div className="text-center text-sm text-[var(--text-muted)] mb-4">
-                      Estimated time remaining: {estimateTimeRemaining(
-                        transcriptionStatus.pending,
-                        transcriptionStatus.in_progress,
-                        parallelWorkers
-                      )}
+                  {/* Video-level progress summary */}
+                  {totalVideos > 0 && (
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between text-xs text-[var(--text-muted)] mb-1">
+                        <span>Videos: {processedVideos.toLocaleString()} / {totalVideos.toLocaleString()}</span>
+                        <span>{videoPercent}%</span>
+                      </div>
+                      <div className="h-2 bg-[var(--bg-tertiary)] rounded-full overflow-hidden mb-2">
+                        <div
+                          className="h-full bg-green-500 transition-all duration-500"
+                          style={{ width: `${videoPercent}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-center gap-3 text-sm text-[var(--text-muted)]">
+                        {timeEstimate.eta !== 'Complete' && (
+                          <span>ETA: {timeEstimate.eta}</span>
+                        )}
+                        {timeEstimate.rate && (
+                          <>
+                            <span className="text-[var(--border)]">|</span>
+                            <span>{timeEstimate.rate}</span>
+                          </>
+                        )}
+                        {timeEstimate.eta === 'Complete' && (
+                          <span className="text-green-400">All videos processed</span>
+                        )}
+                      </div>
                     </div>
                   )}
 

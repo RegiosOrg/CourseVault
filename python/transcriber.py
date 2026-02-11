@@ -158,10 +158,21 @@ class TranscriberConfig:
     output_dir: Path
     whisper_model: str
     whisper_executable: Path
-    ffmpeg_executable: str = "ffmpeg"
+    ffmpeg_executable: str = ""
     keep_audio: bool = False
     dry_run: bool = False
     retry_failed: bool = False
+    
+    def __post_init__(self):
+        """Set defaults after initialization."""
+        if not self.ffmpeg_executable:
+            # Try to find bundled ffmpeg first
+            bundled = find_bundled_ffmpeg()
+            if bundled:
+                self.ffmpeg_executable = str(bundled)
+            else:
+                # Fall back to PATH
+                self.ffmpeg_executable = "ffmpeg"
 
 
 class WebinarTranscriber:
@@ -284,6 +295,11 @@ class WebinarTranscriber:
     def _get_model_path(self) -> Path:
         """Get path to whisper model file."""
         model_name = f"ggml-{self.config.whisper_model}.bin"
+
+        # Check for bundled model first
+        bundled_model = find_bundled_model(self.config.whisper_model)
+        if bundled_model:
+            return bundled_model
 
         # Check multiple locations for models
         search_paths = [
@@ -438,8 +454,78 @@ class WebinarTranscriber:
         self.global_progress.print_summary()
 
 
+def get_bundled_resources_path() -> Optional[Path]:
+    """Get path to bundled resources (when running from packaged app)."""
+    # When packaged with PyInstaller, sys._MEIPASS contains the extracted files
+    if hasattr(sys, '_MEIPASS'):
+        return Path(sys._MEIPASS)
+    
+    # When running from electron app resources (production)
+    # The resources are in the same directory as the executable's parent
+    exe_dir = Path(sys.executable).parent if getattr(sys, 'frozen', False) else None
+    if exe_dir:
+        # Check if resources exist alongside
+        resources_path = exe_dir.parent / 'resources'
+        if resources_path.exists():
+            return resources_path
+    
+    # Development: check relative to script location
+    script_dir = Path(__file__).parent
+    dev_resources = script_dir.parent / 'resources'
+    if dev_resources.exists():
+        return dev_resources
+    
+    return None
+
+
+def find_bundled_whisper() -> Optional[Path]:
+    """Find whisper.cpp in bundled resources."""
+    resources = get_bundled_resources_path()
+    if not resources:
+        return None
+    
+    whisper_path = resources / 'bin' / 'whisper' / 'whisper-cli.exe'
+    if whisper_path.exists():
+        return whisper_path
+    
+    return None
+
+
+def find_bundled_ffmpeg() -> Optional[Path]:
+    """Find ffmpeg in bundled resources."""
+    resources = get_bundled_resources_path()
+    if not resources:
+        return None
+    
+    ffmpeg_path = resources / 'bin' / 'ffmpeg' / 'ffmpeg.exe'
+    if ffmpeg_path.exists():
+        return ffmpeg_path
+    
+    return None
+
+
+def find_bundled_model(model_name: str) -> Optional[Path]:
+    """Find whisper model in bundled resources."""
+    resources = get_bundled_resources_path()
+    if not resources:
+        return None
+    
+    model_file = f"ggml-{model_name}.bin"
+    model_path = resources / 'models' / model_file
+    if model_path.exists():
+        return model_path
+    
+    return None
+
+
 def find_whisper_executable(require_gpu: bool = False) -> Optional[Path]:
     """Try to find whisper.cpp executable. Prefers GPU/CUDA version."""
+    
+    # First, check for bundled version (always prefer bundled for consistency)
+    bundled = find_bundled_whisper()
+    if bundled:
+        print(f"[BUNDLED] Using whisper: {bundled}")
+        return bundled
 
     # GPU/CUDA paths - these run on GPU
     cuda_paths = [

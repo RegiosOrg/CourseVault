@@ -27,6 +27,12 @@ INDEX_FILE = TRANSCRIPTS_DIR / "index.html"
 DEFAULT_PORT = 8080
 DEFAULT_HOST = "127.0.0.1"  # Use IPv4 explicitly to avoid IPv6 issues on Windows
 
+# Cache for video counts per course (avoids rescanning disk every poll)
+_video_count_cache: Dict[str, int] = {}
+_video_count_cache_time: float = 0
+_video_count_cache_lock = threading.Lock()
+_VIDEO_COUNT_CACHE_TTL = 120  # 2 minutes - balance freshness vs disk I/O
+
 OLLAMA_URL = "http://127.0.0.1:11434"
 LM_STUDIO_URL = "http://localhost:1234"
 DEFAULT_MODEL = "llama3.2"
@@ -435,6 +441,43 @@ class CourseRAG:
         return "\n".join(context_parts)
 
 
+SUPPORTED_VIDEO_EXTENSIONS = {".mp4", ".mkv", ".avi", ".mov", ".webm", ".m4v"}
+
+
+def _count_videos_in_course(course_path: Path) -> int:
+    """Count video files in a single course directory."""
+    try:
+        return sum(
+            1 for f in course_path.rglob("*")
+            if f.suffix.lower() in SUPPORTED_VIDEO_EXTENSIONS
+        )
+    except (PermissionError, OSError):
+        return 0
+
+
+def get_video_counts(input_dir: Path, course_names: list) -> Dict[str, int]:
+    """Get video counts per course with caching to avoid repeated disk scans."""
+    global _video_count_cache, _video_count_cache_time
+
+    with _video_count_cache_lock:
+        now = time.time()
+        # If cache is fresh enough, just fill in any missing courses
+        if now - _video_count_cache_time < _VIDEO_COUNT_CACHE_TTL:
+            missing = [n for n in course_names if n not in _video_count_cache]
+            if not missing:
+                return dict(_video_count_cache)
+
+        # Scan courses not yet cached
+        for name in course_names:
+            if name not in _video_count_cache:
+                course_path = input_dir / name
+                if course_path.is_dir():
+                    _video_count_cache[name] = _count_videos_in_course(course_path)
+
+        _video_count_cache_time = now
+        return dict(_video_count_cache)
+
+
 class ChatHandler(SimpleHTTPRequestHandler):
     """HTTP handler for chat requests."""
 
@@ -520,7 +563,35 @@ class ChatHandler(SimpleHTTPRequestHandler):
                 in_progress = [n for n in all_courses if progress_data.get(n, {}).get("status") == "in_progress"]
                 pending = [n for n in all_courses if n not in completed and n not in in_progress]
 
-                total_videos_done = sum(progress_data.get(n, {}).get("processed_videos", 0) for n in completed)
+                # Video-level progress across ALL courses (completed + in_progress)
+                total_videos_done = sum(
+                    progress_data.get(n, {}).get("processed_videos", 0)
+                    for n in completed
+                )
+                in_progress_videos_done = sum(
+                    progress_data.get(n, {}).get("processed_videos", 0)
+                    for n in in_progress
+                )
+                total_videos_processed = total_videos_done + in_progress_videos_done
+
+                # Total video count: use progress.json for known courses, scan disk for rest
+                video_counts = get_video_counts(input_dir, all_courses)
+                total_videos_all = 0
+                for n in all_courses:
+                    # Prefer progress.json total_videos (set when course is claimed)
+                    pv = progress_data.get(n, {}).get("total_videos")
+                    if isinstance(pv, int) and pv > 0:
+                        total_videos_all += pv
+                    elif n in video_counts:
+                        total_videos_all += video_counts[n]
+
+                # Find earliest processing start time for rate calculation
+                started_timestamps = []
+                for n in all_courses:
+                    ws = progress_data.get(n, {}).get("worker_started")
+                    if ws:
+                        started_timestamps.append(ws)
+                processing_started_at = min(started_timestamps) if started_timestamps else None
 
                 status = {
                     "total_courses": len(all_courses),
@@ -528,6 +599,9 @@ class ChatHandler(SimpleHTTPRequestHandler):
                     "in_progress": len(in_progress),
                     "pending": len(pending),
                     "total_videos_done": total_videos_done,
+                    "total_videos_processed": total_videos_processed,
+                    "total_videos": total_videos_all,
+                    "processing_started_at": processing_started_at,
                     "completed_courses": completed[:10],  # First 10
                     "in_progress_courses": [
                         {
