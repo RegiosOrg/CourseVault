@@ -73,5 +73,9 @@ stitch_designs/
 # Windows artifacts
 nul
 
+# Bundled dependencies (downloaded at build time)
+resources/bin/
+resources/models/*.bin
+
 # Package lock (use npm ci in CI)
 # package-lock.json
